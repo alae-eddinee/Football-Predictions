@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: alae-pitch
+    runtime: python
+    region: frankfurt
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.server:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: API_FOOTBALL_KEY
+        sync: false
+      - key: FOOTBALL_DATA_KEY
+        sync: false
+      - key: PYTHONPATH
+        value: .
+    autoDeploy: true
