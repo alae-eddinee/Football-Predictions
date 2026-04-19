@@ -1,0 +1,1630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Alae's Pitch — ML Football Predictions</title>
+<meta name="description" content="ML-powered football match predictions by Alae-Eddine Dahane. XGBoost + LightGBM ensemble across Premier League, La Liga, Bundesliga, Serie A, Ligue 1 and more."/>
+<meta property="og:title" content="Alae's Pitch — ML Football Predictions"/>
+<meta property="og:description" content="Football match outcome predictions powered by machine learning."/>
+<meta name="theme-color" content="#020617"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg:         #020617;
+  --surface:    #0a1628;
+  --surface2:   #0f172a;
+  --card:       #131f35;
+  --card2:      #1a2744;
+  --border:     #1e3a5f;
+  --border2:    #162035;
+  --text:       #f0f6ff;
+  --text2:      #94a3b8;
+  --muted:      #4a6280;
+  --blue:       #3b82f6;
+  --blue-dim:   rgba(59,130,246,.1);
+  --blue-glow:  rgba(59,130,246,.25);
+  --indigo:     #6366f1;
+  --indigo-dim: rgba(99,102,241,.1);
+  --amber:      #f59e0b;
+  --amber-dim:  rgba(245,158,11,.1);
+  --green:      #22c55e;
+  --green-dim:  rgba(34,197,94,.1);
+  --red:        #ef4444;
+  --red-dim:    rgba(239,68,68,.1);
+  --purple:     #a78bfa;
+  --cyan:       #06b6d4;
+  --r:          12px;
+  --r-sm:       8px;
+  --t:          180ms ease;
+  --t-slow:     300ms ease;
+}
+
+html { font-size: 15px; scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', system-ui, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+/* ── Header ── */
+.header {
+  height: 62px;
+  background: rgba(2,6,23,.85);
+  backdrop-filter: blur(20px) saturate(1.5);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  border-bottom: 1px solid rgba(30,58,95,.6);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 900;
+  font-size: 1.05rem;
+  letter-spacing: -.02em;
+  color: var(--text);
+  text-decoration: none;
+  flex-shrink: 0;
+}
+.logo-mark {
+  width: 34px; height: 34px;
+  background: linear-gradient(135deg, #6366f1 0%, #3b82f6 50%, #06b6d4 100%);
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .75rem;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: -.02em;
+  box-shadow: 0 4px 16px rgba(99,102,241,.35);
+  flex-shrink: 0;
+}
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  line-height: 1;
+}
+.logo-name {
+  font-size: 1rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #f0f6ff 0%, #94a3b8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -.02em;
+}
+.logo-tag {
+  font-size: .6rem;
+  font-weight: 500;
+  color: var(--muted);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  -webkit-text-fill-color: initial;
+}
+
+.header-center { flex: 1; display: flex; justify-content: center; }
+.date-nav {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 11px;
+  padding: 4px;
+}
+.date-nav-btn {
+  padding: 5px 13px;
+  border-radius: 8px;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: .8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--t);
+  white-space: nowrap;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  line-height: 1.2;
+}
+.date-nav-btn .dnb-label { font-size: .8rem; }
+.date-nav-btn .dnb-date { font-size: .65rem; opacity: .55; }
+.date-nav-btn .dnb-count {
+  font-size: .63rem;
+  background: var(--card);
+  color: var(--muted);
+  padding: 0 5px;
+  border-radius: 99px;
+  margin-top: 2px;
+  min-width: 18px;
+  text-align: center;
+}
+.date-nav-btn:hover { color: var(--text); background: var(--card); }
+.date-nav-btn.active {
+  background: linear-gradient(135deg, #6366f1, #3b82f6);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(99,102,241,.4);
+}
+.date-nav-btn.active .dnb-date { opacity: .75; }
+.date-nav-btn.active .dnb-count { background: rgba(255,255,255,.2); color: #fff; }
+
+.header-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 99px;
+  padding: 5px 12px;
+  font-size: .73rem;
+  color: var(--muted);
+}
+.status-pip {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--red);
+  flex-shrink: 0;
+}
+.status-pip.ready {
+  background: var(--green);
+  box-shadow: 0 0 8px rgba(34,197,94,.6);
+  animation: pip-pulse 2.5s ease-in-out infinite;
+}
+@keyframes pip-pulse { 0%,100%{opacity:1;box-shadow:0 0 6px rgba(34,197,94,.6);} 50%{opacity:.5;box-shadow:0 0 2px rgba(34,197,94,.3);} }
+
+.gh-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 6px 11px;
+  font-size: .73rem;
+  font-weight: 600;
+  color: var(--text2);
+  text-decoration: none;
+  transition: all var(--t);
+}
+.gh-link:hover { border-color: var(--border); color: var(--text); background: var(--card); }
+.gh-link svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+/* ── Layout ── */
+.layout { display: flex; flex: 1; overflow: hidden; height: calc(100vh - 62px); }
+
+/* ── Sidebar ── */
+.sidebar {
+  width: 240px;
+  min-width: 240px;
+  background: var(--surface);
+  border-right: 1px solid var(--border2);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 16px 12px;
+  gap: 22px;
+}
+.sb-section-label {
+  font-size: .65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: var(--muted);
+  padding: 0 6px;
+  margin-bottom: 6px;
+}
+.sb-section { display: flex; flex-direction: column; }
+
+/* Stats widget */
+.stats-widget {
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: var(--r);
+  padding: 12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.stat-item { display: flex; flex-direction: column; gap: 2px; }
+.stat-value {
+  font-family: 'Fira Code', monospace;
+  font-size: .9rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.stat-label { font-size: .65rem; color: var(--muted); font-weight: 500; }
+
+/* Date picker */
+.date-picker-row { display: flex; gap: 6px; }
+.date-picker-row input[type=date] {
+  flex: 1;
+  background: var(--card);
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  padding: 8px 10px;
+  border-radius: var(--r-sm);
+  font-size: .82rem;
+  outline: none;
+  font-family: inherit;
+  transition: border-color var(--t);
+  color-scheme: dark;
+}
+.date-picker-row input[type=date]:focus { border-color: var(--blue); }
+.btn-go {
+  background: linear-gradient(135deg, var(--indigo), var(--blue));
+  border: none;
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: var(--r-sm);
+  font-size: .82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity var(--t);
+  letter-spacing: -.01em;
+}
+.btn-go:hover { opacity: .85; }
+
+/* League filters */
+.league-list { display: flex; flex-direction: column; gap: 1px; }
+.league-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  font-size: .83rem;
+  color: var(--text2);
+  transition: background var(--t), color var(--t);
+}
+.league-item:hover { background: var(--card); color: var(--text); }
+.league-item.active { background: var(--indigo-dim); color: var(--indigo); }
+.league-item .li-flag { font-size: .92rem; flex-shrink: 0; }
+.league-item .li-name { flex: 1; font-weight: 500; }
+.league-item .li-count {
+  font-size: .68rem;
+  color: var(--muted);
+  background: var(--card2);
+  padding: 1px 7px;
+  border-radius: 99px;
+  font-family: 'Fira Code', monospace;
+}
+.league-item.active .li-count { background: rgba(99,102,241,.15); color: var(--indigo); }
+
+/* ── Main ── */
+.main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+/* ── States ── */
+.center-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 12px;
+  color: var(--muted);
+  min-height: 300px;
+}
+.center-state svg { width: 40px; height: 40px; opacity: .25; }
+.center-state p { font-size: .88rem; }
+
+.spinner-ring {
+  width: 28px; height: 28px;
+  border: 2.5px solid var(--border);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── League group ── */
+.league-group { display: flex; flex-direction: column; gap: 10px; }
+.league-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 2px;
+  margin-bottom: 2px;
+}
+.lh-flag { font-size: 1.05rem; }
+.lh-name {
+  font-size: .78rem;
+  font-weight: 800;
+  color: var(--text2);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.lh-count {
+  font-size: .68rem;
+  color: var(--muted);
+  background: var(--card);
+  padding: 2px 8px;
+  border-radius: 99px;
+  margin-left: auto;
+  font-family: 'Fira Code', monospace;
+}
+
+/* ── Match card ── */
+.match-card {
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: var(--r);
+  cursor: pointer;
+  transition: border-color var(--t), transform var(--t-slow), box-shadow var(--t-slow);
+  overflow: hidden;
+  position: relative;
+}
+.match-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--r);
+  background: linear-gradient(135deg, rgba(99,102,241,.04) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity var(--t);
+  pointer-events: none;
+}
+.match-card:hover {
+  border-color: rgba(99,102,241,.35);
+  transform: translateY(-2px);
+  box-shadow: 0 0 0 1px rgba(99,102,241,.1), 0 12px 32px rgba(0,0,0,.5), 0 4px 8px rgba(99,102,241,.08);
+}
+.match-card:hover::before { opacity: 1; }
+.match-card.predicted { border-color: rgba(59,130,246,.3); }
+.match-card.predicted::before {
+  background: linear-gradient(135deg, rgba(59,130,246,.05) 0%, transparent 60%);
+  opacity: 1;
+}
+
+.mc-body {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 16px 20px;
+  gap: 12px;
+}
+.mc-team {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+.mc-crest {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  object-fit: contain;
+  background: var(--card2);
+  flex-shrink: 0;
+}
+.mc-crest-placeholder {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  background: var(--card2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+.mc-name {
+  font-size: .8rem;
+  font-weight: 700;
+  color: var(--text);
+  text-align: center;
+  line-height: 1.3;
+  word-break: break-word;
+}
+.mc-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+.mc-time {
+  font-family: 'Fira Code', monospace;
+  font-size: .95rem;
+  font-weight: 600;
+  color: var(--text2);
+  letter-spacing: .03em;
+}
+.mc-score {
+  font-family: 'Fira Code', monospace;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: .05em;
+}
+.mc-status {
+  font-size: .63rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  padding: 3px 9px;
+  border-radius: 99px;
+}
+.mc-status.ns  { background: var(--card2); color: var(--muted); }
+.mc-status.ft  { background: var(--green-dim); color: var(--green); }
+.mc-status.live{
+  background: var(--red-dim); color: var(--red);
+  box-shadow: 0 0 8px rgba(239,68,68,.3);
+  animation: pip-pulse 1.5s infinite;
+}
+.mc-round { font-size: .62rem; color: var(--muted); text-align: center; }
+
+/* Prob bar strip */
+.mc-prob {
+  display: flex;
+  height: 3px;
+  border-radius: 0 0 var(--r) var(--r);
+  overflow: hidden;
+}
+.mc-prob-h { background: linear-gradient(90deg, #16a34a, var(--green)); }
+.mc-prob-d { background: linear-gradient(90deg, #d97706, var(--amber)); }
+.mc-prob-a { background: linear-gradient(90deg, #dc2626, var(--red)); }
+
+/* Footer of match card */
+.mc-footer {
+  padding: 0 20px 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.mc-predict-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--indigo-dim);
+  border: 1px solid rgba(99,102,241,.25);
+  color: var(--indigo);
+  padding: 5px 14px;
+  border-radius: 99px;
+  font-size: .76rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--t);
+  font-family: inherit;
+  letter-spacing: -.01em;
+}
+.mc-predict-btn:hover {
+  background: linear-gradient(135deg, var(--indigo), var(--blue));
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 2px 8px rgba(99,102,241,.4);
+}
+.mc-predict-btn.loading { opacity: .5; pointer-events: none; }
+.mc-predict-btn svg { width: 12px; height: 12px; }
+.mc-mini-probs {
+  display: flex;
+  gap: 8px;
+  font-family: 'Fira Code', monospace;
+  font-size: .73rem;
+  font-weight: 600;
+}
+.mc-mini-probs .h { color: var(--green); }
+.mc-mini-probs .d { color: var(--amber); }
+.mc-mini-probs .a { color: var(--red); }
+
+/* ── Side Panel ── */
+.panel-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  pointer-events: none;
+}
+.panel-overlay.open { pointer-events: all; }
+.panel-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(2,6,23,.7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  opacity: 0;
+  transition: opacity .25s ease;
+}
+.panel-overlay.open .panel-backdrop { opacity: 1; }
+.panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: min(480px, 100vw);
+  background: var(--surface);
+  border-left: 1px solid var(--border2);
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform .32s cubic-bezier(.4,0,.2,1);
+  overflow: hidden;
+}
+.panel::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(99,102,241,.5), transparent);
+}
+.panel-overlay.open .panel { transform: translateX(0); }
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px 16px;
+  border-bottom: 1px solid var(--border2);
+  flex-shrink: 0;
+}
+.panel-header-meta { display: flex; flex-direction: column; gap: 3px; }
+.panel-header-league {
+  font-size: .68rem;
+  font-weight: 700;
+  color: var(--indigo);
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.panel-header-time { font-size: .8rem; color: var(--text2); }
+.panel-close {
+  width: 32px; height: 32px;
+  border-radius: var(--r-sm);
+  background: var(--card);
+  border: 1px solid var(--border2);
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--t);
+  flex-shrink: 0;
+}
+.panel-close:hover { background: var(--card2); color: var(--text); }
+.panel-close svg { width: 14px; height: 14px; }
+
+.panel-body { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+
+/* Teams row */
+.panel-teams {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 16px;
+}
+.pt-team {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+.pt-crest {
+  width: 60px; height: 60px;
+  object-fit: contain;
+  border-radius: 12px;
+  background: var(--card);
+  padding: 4px;
+}
+.pt-crest-ph {
+  width: 60px; height: 60px;
+  border-radius: 12px;
+  background: var(--card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+}
+.pt-name { font-size: .9rem; font-weight: 800; color: var(--text); line-height: 1.3; }
+.pt-elo {
+  font-family: 'Fira Code', monospace;
+  font-size: .68rem;
+  color: var(--muted);
+  background: var(--card);
+  border: 1px solid var(--border2);
+  padding: 2px 8px;
+  border-radius: 99px;
+}
+.pt-form { display: flex; gap: 3px; justify-content: center; flex-wrap: wrap; margin-top: 1px; }
+.form-dot {
+  width: 20px; height: 20px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .62rem;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+.form-dot.W { background: var(--green-dim); color: var(--green); }
+.form-dot.D { background: var(--amber-dim); color: var(--amber); }
+.form-dot.L { background: var(--red-dim); color: var(--red); }
+.pt-vs {
+  font-size: .75rem;
+  font-weight: 900;
+  color: var(--muted);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+/* Verdict */
+.verdict-card {
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: var(--r);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  position: relative;
+  overflow: hidden;
+}
+.verdict-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 3px;
+  height: 100%;
+  border-radius: 99px 0 0 99px;
+}
+.verdict-card.home::before { background: var(--green); }
+.verdict-card.draw::before { background: var(--amber); }
+.verdict-card.away::before { background: var(--blue); }
+.verdict-icon-wrap {
+  width: 44px; height: 44px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.verdict-icon-wrap.home { background: var(--green-dim); }
+.verdict-icon-wrap.draw { background: var(--amber-dim); }
+.verdict-icon-wrap.away { background: var(--blue-dim); }
+.verdict-icon-wrap svg { width: 22px; height: 22px; }
+.verdict-icon-wrap.home svg { color: var(--green); }
+.verdict-icon-wrap.draw svg { color: var(--amber); }
+.verdict-icon-wrap.away svg { color: var(--blue); }
+.verdict-text { flex: 1; }
+.verdict-outcome { font-size: 1rem; font-weight: 800; color: var(--text); }
+.verdict-conf { font-size: .76rem; color: var(--muted); margin-top: 3px; }
+.verdict-badge {
+  font-size: .63rem;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--indigo);
+  background: var(--indigo-dim);
+  border: 1px solid rgba(99,102,241,.2);
+  padding: 3px 9px;
+  border-radius: 6px;
+}
+
+/* Prob bars */
+.section-label {
+  font-size: .67rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: var(--muted);
+  margin-bottom: 11px;
+}
+.prob-rows { display: flex; flex-direction: column; gap: 9px; }
+.prob-row { display: flex; flex-direction: column; gap: 5px; }
+.prob-row-meta { display: flex; justify-content: space-between; align-items: baseline; }
+.prob-row-label { font-size: .82rem; font-weight: 600; color: var(--text2); }
+.prob-row-pct { font-family: 'Fira Code', monospace; font-size: .85rem; font-weight: 700; }
+.prob-row-pct.h { color: var(--green); }
+.prob-row-pct.d { color: var(--amber); }
+.prob-row-pct.a { color: var(--red); }
+.prob-track {
+  height: 5px;
+  background: var(--card2);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.prob-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width .65s cubic-bezier(.4,0,.2,1);
+}
+.prob-fill.h { background: linear-gradient(90deg, #16a34a, var(--green)); }
+.prob-fill.d { background: linear-gradient(90deg, #d97706, var(--amber)); }
+.prob-fill.a { background: linear-gradient(90deg, #dc2626, var(--red)); }
+
+/* Odds input */
+.odds-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto;
+  gap: 8px;
+  align-items: end;
+}
+.odds-field label {
+  display: block;
+  font-size: .68rem;
+  color: var(--muted);
+  margin-bottom: 5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.odds-field input {
+  width: 100%;
+  background: var(--card2);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  padding: 8px 10px;
+  border-radius: var(--r-sm);
+  font-size: .85rem;
+  font-family: 'Fira Code', monospace;
+  outline: none;
+  transition: border-color var(--t), box-shadow var(--t);
+}
+.odds-field input:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px var(--blue-dim);
+}
+.btn-scan {
+  background: linear-gradient(135deg, #b45309, var(--amber));
+  border: none;
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: var(--r-sm);
+  font-size: .78rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: opacity var(--t);
+  white-space: nowrap;
+  font-family: inherit;
+  letter-spacing: .02em;
+  box-shadow: 0 2px 8px rgba(245,158,11,.3);
+}
+.btn-scan:hover { opacity: .85; }
+
+/* Value bets */
+.vb-card {
+  background: var(--card);
+  border: 1px solid rgba(245,158,11,.2);
+  border-radius: var(--r);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+  overflow: hidden;
+}
+.vb-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, var(--amber), transparent);
+}
+.vb-header { display: flex; align-items: center; justify-content: space-between; }
+.vb-outcome { font-size: .88rem; font-weight: 800; color: var(--text); }
+.vb-odds {
+  font-family: 'Fira Code', monospace;
+  font-size: .9rem;
+  font-weight: 700;
+  color: var(--amber);
+  background: var(--amber-dim);
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+.vb-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.vb-stat { display: flex; flex-direction: column; gap: 2px; }
+.vb-stat-label { font-size: .65rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+.vb-stat-value { font-family: 'Fira Code', monospace; font-size: .85rem; font-weight: 700; color: var(--text2); }
+.vb-stat-value.pos { color: var(--green); }
+.vb-stat-value.hi { color: var(--amber); }
+
+/* Divider */
+.divider { border: none; border-top: 1px solid var(--border2); margin: 0; }
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(12px);
+  background: var(--card2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 10px 20px;
+  border-radius: 99px;
+  font-size: .83rem;
+  font-weight: 600;
+  z-index: 9999;
+  animation: toast-in .2s ease forwards;
+  white-space: nowrap;
+  backdrop-filter: blur(8px);
+}
+.toast.success { border-color: var(--green); color: var(--green); }
+.toast.error   { border-color: var(--red);   color: var(--red);   }
+@keyframes toast-in { to { transform: translateX(-50%) translateY(0); } }
+
+/* ── Training modal ── */
+.train-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(2,6,23,.9);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.train-overlay.hidden { display: none; }
+.train-modal {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 28px;
+  width: min(500px, 94vw);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow: 0 32px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(99,102,241,.1);
+}
+.train-modal-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.train-modal-title svg { width: 22px; height: 22px; color: var(--indigo); flex-shrink: 0; }
+.train-modal-sub { font-size: .82rem; color: var(--muted); line-height: 1.6; }
+.train-stages { display: flex; flex-direction: column; gap: 6px; }
+.train-stage {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  background: var(--card);
+  border: 1px solid var(--border2);
+  font-size: .83rem;
+  color: var(--muted);
+  transition: all .3s ease;
+}
+.train-stage.active { border-color: rgba(99,102,241,.4); color: var(--text); }
+.train-stage.done   { border-color: rgba(34,197,94,.3); color: var(--green); }
+.train-stage-icon { width: 28px; height: 28px; border-radius: 7px; display: flex; align-items: center; justify-content: center; background: var(--card2); flex-shrink: 0; }
+.train-stage-icon svg { width: 14px; height: 14px; }
+.train-stage.active .train-stage-icon { background: var(--indigo-dim); }
+.train-stage.active .train-stage-icon svg { color: var(--indigo); }
+.train-stage.done   .train-stage-icon { background: var(--green-dim); }
+.train-stage.done   .train-stage-icon svg { color: var(--green); }
+.train-stage-label { flex: 1; font-weight: 600; }
+.train-stage-spinner { width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--indigo); border-radius: 50%; animation: spin .7s linear infinite; display: none; }
+.train-stage.active .train-stage-spinner { display: block; }
+.train-progress-bar { height: 4px; background: var(--card2); border-radius: 99px; overflow: hidden; }
+.train-progress-fill { height: 100%; background: linear-gradient(90deg, var(--indigo), var(--blue), var(--cyan)); border-radius: 99px; width: 0%; transition: width .6s ease; }
+.train-log { background: var(--bg); border: 1px solid var(--border2); border-radius: var(--r-sm); padding: 10px 12px; font-family: 'Fira Code', monospace; font-size: .68rem; color: var(--muted); max-height: 100px; overflow-y: auto; line-height: 1.65; }
+.train-log-line { white-space: pre-wrap; word-break: break-all; }
+
+/* ── Footer ── */
+.app-footer {
+  flex-shrink: 0;
+  border-top: 1px solid var(--border2);
+  background: var(--surface);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: .7rem;
+  color: var(--muted);
+}
+.footer-brand {
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--indigo), var(--blue));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.footer-links { display: flex; gap: 16px; align-items: center; }
+.footer-links a { color: var(--muted); text-decoration: none; transition: color var(--t); }
+.footer-links a:hover { color: var(--text); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+@media (max-width: 768px) {
+  .sidebar { display: none; }
+  .gh-link span { display: none; }
+  .logo-tag { display: none; }
+  .main { padding: 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+  <a class="logo" href="#">
+    <div class="logo-mark">AP</div>
+    <div class="logo-text">
+      <span class="logo-name">Alae's Pitch</span>
+      <span class="logo-tag">Football Predictions</span>
+    </div>
+  </a>
+
+  <div class="header-center">
+    <div class="date-nav" id="dateNav"></div>
+  </div>
+
+  <div class="header-right">
+    <div class="status-pill">
+      <div class="status-pip" id="statusPip"></div>
+      <span id="statusLabel">Connecting…</span>
+    </div>
+    <a class="gh-link" href="https://github.com/alae-eddinee/Football-Predictions" target="_blank" rel="noopener" title="View on GitHub">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+      <span>GitHub</span>
+    </a>
+  </div>
+</header>
+
+<!-- Layout -->
+<div class="layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sb-section">
+      <div class="sb-section-label">Model Status</div>
+      <div class="stats-widget" id="statsWidget">
+        <div class="stat-item">
+          <span class="stat-value" id="statMatches">—</span>
+          <span class="stat-label">Matches</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value" id="statTeams">—</span>
+          <span class="stat-label">Teams</span>
+        </div>
+      </div>
+    </div>
+    <div class="sb-section">
+      <div class="sb-section-label">Custom Date</div>
+      <div class="date-picker-row">
+        <input type="date" id="customDate"/>
+        <button class="btn-go" onclick="loadCustomDate()">Go</button>
+      </div>
+    </div>
+    <div class="sb-section">
+      <div class="sb-section-label">Leagues</div>
+      <div class="league-list" id="leagueList"></div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main" id="main">
+    <div class="center-state">
+      <div class="spinner-ring"></div>
+      <p>Loading fixtures…</p>
+    </div>
+  </main>
+
+</div>
+
+<!-- Footer -->
+<footer class="app-footer">
+  <span>Built by <span class="footer-brand">Alae-Eddine Dahane</span> — personal fun project</span>
+  <div class="footer-links">
+    <a href="https://github.com/alae-eddinee/Football-Predictions" target="_blank" rel="noopener">GitHub</a>
+    <span>·</span>
+    <span>XGBoost + LightGBM</span>
+  </div>
+</footer>
+
+<!-- Prediction Panel -->
+<div class="panel-overlay" id="panelOverlay">
+  <div class="panel-backdrop" id="panelBackdrop" onclick="closePanel()"></div>
+  <div class="panel" id="panel">
+    <div class="panel-header">
+      <div class="panel-header-meta">
+        <div class="panel-header-league" id="panelLeague">—</div>
+        <div class="panel-header-time" id="panelTime">—</div>
+      </div>
+      <button class="panel-close" onclick="closePanel()" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="panel-body" id="panelBody"></div>
+  </div>
+</div>
+
+<!-- Training Modal -->
+<div class="train-overlay hidden" id="trainOverlay">
+  <div class="train-modal">
+    <div class="train-modal-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+      Training Prediction Model
+    </div>
+    <p class="train-modal-sub">First-time setup — downloading 5 seasons of match data and training the XGBoost + LightGBM ensemble. Takes <strong style="color:var(--text2)">3–10 minutes</strong> and only runs once.</p>
+    <div class="train-stages">
+      <div class="train-stage" id="stageIngest">
+        <div class="train-stage-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        </div>
+        <span class="train-stage-label">Downloading historical match data</span>
+        <div class="train-stage-spinner"></div>
+      </div>
+      <div class="train-stage" id="stageTrain">
+        <div class="train-stage-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
+        </div>
+        <span class="train-stage-label">Training XGBoost + LightGBM ensemble</span>
+        <div class="train-stage-spinner"></div>
+      </div>
+      <div class="train-stage" id="stageLoad">
+        <div class="train-stage-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>
+        </div>
+        <span class="train-stage-label">Loading model into predictor</span>
+        <div class="train-stage-spinner"></div>
+      </div>
+    </div>
+    <div class="train-progress-bar"><div class="train-progress-fill" id="trainProgressFill"></div></div>
+    <div class="train-log" id="trainLog"></div>
+  </div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────
+const API = '';
+let currentDate = new Date().toISOString().slice(0,10);
+let allFixtures = [];
+let predictions = {};
+let activeLeague = null;
+let activeDateOffset = 0;
+
+// ── Helpers ────────────────────────────────────────────────────
+function offsetDate(n) {
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0,10);
+}
+function fmtDate(iso) {
+  return new Date(iso + 'T00:00:00').toLocaleDateString('en-GB', {day:'numeric', month:'short'});
+}
+function fmtDay(n) {
+  if (n === 0) return 'Today';
+  if (n === 1) return 'Tomorrow';
+  return new Date(offsetDate(n) + 'T00:00:00').toLocaleDateString('en-GB', {weekday:'short'});
+}
+function showToast(msg, type='') {
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+function svgIcon(path, opts='') {
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ${opts}>${path}</svg>`;
+}
+
+// ── Init ───────────────────────────────────────────────────────
+async function init() {
+  buildDateNav();
+  checkStatus();
+  await loadFixtures(currentDate);
+  document.getElementById('customDate').value = currentDate;
+}
+
+async function checkStatus() {
+  try {
+    const d = await fetch(`${API}/api/status`).then(r => r.json());
+    const pip = document.getElementById('statusPip');
+    const lbl = document.getElementById('statusLabel');
+    if (d.model_ready) {
+      pip.classList.add('ready');
+      lbl.textContent = `${d.history_size.toLocaleString()} matches`;
+    } else {
+      lbl.textContent = 'Model not trained';
+    }
+    const statMatches = document.getElementById('statMatches');
+    const statTeams = document.getElementById('statTeams');
+    if (statMatches) statMatches.textContent = d.history_size ? d.history_size.toLocaleString() : '—';
+    if (statTeams) statTeams.textContent = d.teams_tracked ? d.teams_tracked.toLocaleString() : '—';
+  } catch {
+    document.getElementById('statusLabel').textContent = 'Offline';
+  }
+}
+
+// ── Date nav ───────────────────────────────────────────────────
+function buildDateNav() {
+  const nav = document.getElementById('dateNav');
+  nav.innerHTML = '';
+  for (let i = 0; i < 5; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'date-nav-btn' + (i === 0 ? ' active' : '');
+    btn.id = `dnb${i}`;
+    btn.dataset.offset = i;
+    btn.innerHTML = `
+      <span class="dnb-label">${fmtDay(i)}</span>
+      <span class="dnb-date">${fmtDate(offsetDate(i))}</span>
+      <span class="dnb-count" id="dnbCount${i}">—</span>`;
+    btn.addEventListener('click', () => selectDate(i));
+    nav.appendChild(btn);
+  }
+}
+
+function selectDate(offset) {
+  activeDateOffset = offset;
+  currentDate = offsetDate(offset);
+  activeLeague = null;
+  document.querySelectorAll('.date-nav-btn').forEach((b,i) => b.classList.toggle('active', i===offset));
+  loadFixtures(currentDate);
+}
+
+function loadCustomDate() {
+  const val = document.getElementById('customDate').value;
+  if (!val) return;
+  currentDate = val;
+  activeLeague = null;
+  document.querySelectorAll('.date-nav-btn').forEach(b => b.classList.remove('active'));
+  loadFixtures(val);
+}
+
+// ── Load fixtures ──────────────────────────────────────────────
+async function loadFixtures(date) {
+  showLoading();
+  try {
+    const data = await fetch(`${API}/api/fixtures?date=${date}`).then(r => { if(!r.ok) throw new Error(); return r.json(); });
+    const countEl = document.getElementById(`dnbCount${activeDateOffset}`);
+    if (countEl) countEl.textContent = data.total || '0';
+    allFixtures = [];
+    data.leagues.forEach(lg => lg.fixtures.forEach(f => {
+      f._league_name = lg.league_name;
+      f._flag = lg.flag;
+      allFixtures.push(f);
+    }));
+    buildLeagueList(data.leagues);
+    renderFixtures(data.leagues);
+  } catch {
+    showEmpty('Failed to load fixtures. Check the server is running.');
+  }
+}
+
+function showLoading() {
+  document.getElementById('main').innerHTML = `
+    <div class="center-state">
+      <div class="spinner-ring"></div>
+      <p>Loading fixtures…</p>
+    </div>`;
+}
+
+function showEmpty(msg) {
+  document.getElementById('main').innerHTML = `
+    <div class="center-state">
+      ${svgIcon('<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>')}
+      <p>${msg || 'No fixtures on this date.'}</p>
+    </div>`;
+}
+
+// ── League list ────────────────────────────────────────────────
+function buildLeagueList(leagues) {
+  const el = document.getElementById('leagueList');
+  el.innerHTML = `
+    <div class="league-item active" id="liAll" onclick="filterLeague(null,this)">
+      ${svgIcon('<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/>', 'style="width:15px;height:15px;color:var(--indigo)"')}
+      <span class="li-name">All Leagues</span>
+      <span class="li-count">${allFixtures.length}</span>
+    </div>`;
+  leagues.forEach(lg => {
+    const d = document.createElement('div');
+    d.className = 'league-item';
+    d.id = `li${lg.league_id}`;
+    d.innerHTML = `<span class="li-flag">${lg.flag}</span><span class="li-name">${lg.league_name}</span><span class="li-count">${lg.fixtures.length}</span>`;
+    d.addEventListener('click', () => filterLeague(lg.league_id, d));
+    el.appendChild(d);
+  });
+}
+
+function filterLeague(id, el) {
+  activeLeague = id;
+  document.querySelectorAll('.league-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+  const grouped = {};
+  allFixtures.forEach(f => {
+    if (id && f.league_id !== id) return;
+    if (!grouped[f.league_id]) grouped[f.league_id] = { league_id: f.league_id, league_name: f._league_name, flag: f._flag, fixtures: [] };
+    grouped[f.league_id].fixtures.push(f);
+  });
+  renderFixtures(Object.values(grouped));
+}
+
+// ── Render fixtures ────────────────────────────────────────────
+function renderFixtures(leagues) {
+  const main = document.getElementById('main');
+  const visible = leagues.filter(lg => (!activeLeague || lg.league_id === activeLeague) && lg.fixtures.length);
+  if (!visible.length) { showEmpty(); return; }
+
+  main.innerHTML = '';
+  visible.forEach(lg => {
+    const grp = document.createElement('div');
+    grp.className = 'league-group';
+    grp.innerHTML = `
+      <div class="league-header">
+        <span class="lh-flag">${lg.flag || '🏆'}</span>
+        <span class="lh-name">${lg.league_name}</span>
+        <span class="lh-count">${lg.fixtures.length} match${lg.fixtures.length!==1?'es':''}</span>
+      </div>`;
+    lg.fixtures.forEach(f => grp.appendChild(buildCard(f)));
+    main.appendChild(grp);
+  });
+}
+
+function buildCard(f) {
+  const pred = predictions[f.fixture_id];
+  const card = document.createElement('div');
+  card.className = 'match-card' + (pred ? ' predicted' : '');
+  card.id = `card-${f.fixture_id}`;
+
+  const statusCls = f.status_short === 'FT' ? 'ft' : (f.status_short === 'NS' ? 'ns' : 'live');
+  const statusLbl = f.status_short === 'FT' ? 'Full Time' : (f.status_short === 'NS' ? (f.kickoff || 'TBC') : f.status_short);
+
+  const homeCrest = f.home_crest ? `<img class="mc-crest" src="${f.home_crest}" alt="${f.home_team}" loading="lazy"/>` : `<div class="mc-crest-placeholder">⚽</div>`;
+  const awayCrest = f.away_crest ? `<img class="mc-crest" src="${f.away_crest}" alt="${f.away_team}" loading="lazy"/>` : `<div class="mc-crest-placeholder">⚽</div>`;
+
+  const centerContent = (f.status_short === 'FT' && f.home_goals !== null)
+    ? `<span class="mc-score">${f.home_goals} – ${f.away_goals}</span>`
+    : `<span class="mc-time">${f.kickoff || '—'}</span>`;
+
+  let footerRight = pred
+    ? `<div class="mc-mini-probs"><span class="h">${(pred.prediction.prob_home*100).toFixed(0)}%</span><span class="d">${(pred.prediction.prob_draw*100).toFixed(0)}%</span><span class="a">${(pred.prediction.prob_away*100).toFixed(0)}%</span></div>`
+    : '';
+
+  let probBar = '';
+  if (pred) {
+    const p = pred.prediction;
+    probBar = `<div class="mc-prob">
+      <div class="mc-prob-h" style="flex:${p.prob_home}"></div>
+      <div class="mc-prob-d" style="flex:${p.prob_draw}"></div>
+      <div class="mc-prob-a" style="flex:${p.prob_away}"></div>
+    </div>`;
+  }
+
+  card.innerHTML = `
+    <div class="mc-body">
+      <div class="mc-team">
+        ${homeCrest}
+        <span class="mc-name">${f.home_team}</span>
+      </div>
+      <div class="mc-center">
+        ${centerContent}
+        <span class="mc-status ${statusCls}">${statusLbl}</span>
+        ${f.round ? `<span class="mc-round">${f.round}</span>` : ''}
+      </div>
+      <div class="mc-team away">
+        ${awayCrest}
+        <span class="mc-name">${f.away_team}</span>
+      </div>
+    </div>
+    <div class="mc-footer">
+      <button class="mc-predict-btn" id="btn-${f.fixture_id}" onclick="predict(event,${JSON.stringify(f).replace(/"/g,'&quot;')})">
+        ${svgIcon('<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>')}
+        ${pred ? 'Predicted' : 'Predict'}
+      </button>
+      ${footerRight}
+    </div>
+    ${probBar}`;
+
+  card.addEventListener('click', e => {
+    if (e.target.closest('.mc-predict-btn')) return;
+    if (pred) openPanel(f, pred);
+  });
+
+  return card;
+}
+
+// ── Training pipeline ──────────────────────────────────────────
+let _trainingPromise = null;
+
+function _setStage(id, state) {
+  const el = document.getElementById(id);
+  el.classList.remove('active','done');
+  if (state) el.classList.add(state);
+}
+function _setProgress(pct) {
+  document.getElementById('trainProgressFill').style.width = pct + '%';
+}
+function _appendLog(line) {
+  if (!line.trim()) return;
+  const log = document.getElementById('trainLog');
+  const div = document.createElement('div');
+  div.className = 'train-log-line';
+  div.textContent = line;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+async function ensureModelReady() {
+  const st = await fetch(`${API}/api/status`).then(r => r.json());
+  if (st.model_ready) return true;
+  if (!_trainingPromise) _trainingPromise = _runTraining();
+  return _trainingPromise;
+}
+
+async function _runTraining() {
+  document.getElementById('trainOverlay').classList.remove('hidden');
+  document.getElementById('trainLog').innerHTML = '';
+  _setProgress(5); _setStage('stageIngest','active'); _setStage('stageTrain',''); _setStage('stageLoad','');
+  await fetch(`${API}/api/pipeline/run`, { method:'POST' });
+  return new Promise((resolve, reject) => {
+    let lastLen = 0;
+    const poll = setInterval(async () => {
+      try {
+        const s = await fetch(`${API}/api/pipeline/status`).then(r => r.json());
+        s.log.slice(lastLen).forEach(_appendLog);
+        lastLen = s.log.length;
+        if (s.stage === 'Ingesting data')  { _setStage('stageIngest','active'); _setProgress(15); }
+        if (s.stage === 'Training model')  { _setStage('stageIngest','done'); _setStage('stageTrain','active'); _setProgress(60); }
+        if (s.stage === 'Loading model')   { _setStage('stageTrain','done'); _setStage('stageLoad','active'); _setProgress(90); }
+        if (s.status === 'done') {
+          clearInterval(poll);
+          _setStage('stageIngest','done'); _setStage('stageTrain','done'); _setStage('stageLoad','done'); _setProgress(100);
+          await checkStatus();
+          setTimeout(() => { document.getElementById('trainOverlay').classList.add('hidden'); _trainingPromise = null; }, 1000);
+          resolve(true);
+        } else if (s.status === 'error') {
+          clearInterval(poll); _trainingPromise = null;
+          document.getElementById('trainOverlay').classList.add('hidden');
+          reject(new Error(s.error || 'Pipeline failed'));
+        }
+      } catch {}
+    }, 2000);
+  });
+}
+
+// ── Predict ────────────────────────────────────────────────────
+async function predict(e, fixture) {
+  e.stopPropagation();
+  const btn = document.getElementById(`btn-${fixture.fixture_id}`);
+  const origHTML = btn.innerHTML;
+  btn.classList.add('loading');
+  btn.innerHTML = `<div class="spinner-ring" style="width:12px;height:12px;border-width:1.5px;border-top-color:var(--indigo)"></div> Running…`;
+
+  try {
+    await ensureModelReady();
+
+    const r = await fetch(`${API}/api/predict`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fixture_id:  fixture.fixture_id,
+        home_team:   fixture.home_team,
+        away_team:   fixture.away_team,
+        date:        fixture.date,
+        kickoff:     fixture.kickoff,
+        league:      fixture.league || fixture._league_name,
+        league_code: fixture.league_code,
+        season:      fixture.season,
+      }),
+    });
+    if (!r.ok) throw new Error(await r.text());
+    const data = await r.json();
+    predictions[fixture.fixture_id] = data;
+
+    const card = document.getElementById(`card-${fixture.fixture_id}`);
+    if (card) card.replaceWith(buildCard(fixture));
+
+    openPanel(fixture, data);
+  } catch (err) {
+    showToast('Prediction failed: ' + err.message, 'error');
+    btn.innerHTML = origHTML;
+    btn.classList.remove('loading');
+  }
+}
+
+// ── Panel ──────────────────────────────────────────────────────
+function openPanel(fixture, data) {
+  document.getElementById('panelOverlay').classList.add('open');
+  renderPanel(fixture, data);
+}
+function closePanel() {
+  document.getElementById('panelOverlay').classList.remove('open');
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); });
+
+function renderPanel(fixture, data) {
+  const pred = data.prediction;
+  const hi = data.home_insight || {};
+  const ai = data.away_insight || {};
+
+  document.getElementById('panelLeague').textContent = (pred.league || fixture._league_name || '') + (fixture.season ? ' · ' + fixture.season : '');
+  document.getElementById('panelTime').textContent = fixture.date + (fixture.kickoff ? '  ·  ' + fixture.kickoff : '');
+
+  const formDots = s => {
+    if (!s || s === '—') return `<span style="font-size:.7rem;color:var(--muted)">No data</span>`;
+    return s.split('').map(c => `<div class="form-dot ${c}">${c}</div>`).join('');
+  };
+
+  const homeCrest = fixture.home_crest ? `<img class="pt-crest" src="${fixture.home_crest}" alt="${fixture.home_team}"/>` : `<div class="pt-crest-ph">⚽</div>`;
+  const awayCrest = fixture.away_crest ? `<img class="pt-crest" src="${fixture.away_crest}" alt="${fixture.away_team}"/>` : `<div class="pt-crest-ph">⚽</div>`;
+
+  const outcomeKey = pred.predicted_outcome === 'Home Win' ? 'home' : pred.predicted_outcome === 'Draw' ? 'draw' : 'away';
+  const outcomeIcons = {
+    home: '<path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
+    draw: '<circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/>',
+    away: '<path d="M5 12h14M12 5l7 7-7 7"/>',
+  };
+
+  let valueBetsHtml = '';
+  if (pred.value_bets && pred.value_bets.length) {
+    valueBetsHtml = `
+      <hr class="divider"/>
+      <div>
+        <div class="section-label">Value Bets Detected</div>
+        ${pred.value_bets.map(vb => `
+          <div class="vb-card">
+            <div class="vb-header">
+              <span class="vb-outcome">${vb.outcome}</span>
+              <span class="vb-odds">@ ${vb.odds}</span>
+            </div>
+            <div class="vb-stats">
+              <div class="vb-stat">
+                <span class="vb-stat-label">Model Prob</span>
+                <span class="vb-stat-value hi">${(vb.model_prob*100).toFixed(1)}%</span>
+              </div>
+              <div class="vb-stat">
+                <span class="vb-stat-label">Edge</span>
+                <span class="vb-stat-value pos">+${(vb.edge*100).toFixed(1)}%</span>
+              </div>
+              <div class="vb-stat">
+                <span class="vb-stat-label">Kelly Stake</span>
+                <span class="vb-stat-value hi">${vb.kelly_pct}%</span>
+              </div>
+            </div>
+          </div>`).join('')}
+      </div>`;
+  }
+
+  document.getElementById('panelBody').innerHTML = `
+    <div class="panel-teams">
+      <div class="pt-team">
+        ${homeCrest}
+        <div class="pt-name">${pred.home_team}</div>
+        <div class="pt-elo">Elo ${hi.elo || '—'}</div>
+        <div class="pt-form">${formDots(hi.form)}</div>
+      </div>
+      <div class="pt-vs">VS</div>
+      <div class="pt-team">
+        ${awayCrest}
+        <div class="pt-name">${pred.away_team}</div>
+        <div class="pt-elo">Elo ${ai.elo || '—'}</div>
+        <div class="pt-form">${formDots(ai.form)}</div>
+      </div>
+    </div>
+
+    <div class="verdict-card ${outcomeKey}">
+      <div class="verdict-icon-wrap ${outcomeKey}">
+        ${svgIcon(outcomeIcons[outcomeKey])}
+      </div>
+      <div class="verdict-text">
+        <div class="verdict-outcome">${pred.predicted_outcome}</div>
+        <div class="verdict-conf">${(pred.confidence*100).toFixed(0)}% model confidence</div>
+      </div>
+      <span class="verdict-badge">ML Prediction</span>
+    </div>
+
+    <div>
+      <div class="section-label">Outcome Probabilities</div>
+      <div class="prob-rows">
+        ${[
+          {label: pred.home_team, cls:'h', val: pred.prob_home},
+          {label: 'Draw',         cls:'d', val: pred.prob_draw},
+          {label: pred.away_team, cls:'a', val: pred.prob_away},
+        ].map(o => `
+          <div class="prob-row">
+            <div class="prob-row-meta">
+              <span class="prob-row-label">${o.label}</span>
+              <span class="prob-row-pct ${o.cls}">${(o.val*100).toFixed(1)}%</span>
+            </div>
+            <div class="prob-track">
+              <div class="prob-fill ${o.cls}" style="width:${(o.val*100).toFixed(1)}%"></div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    ${valueBetsHtml}
+
+    <hr class="divider"/>
+    <div>
+      <div class="section-label">Bookmaker Odds — Value Scan</div>
+      <div class="odds-grid">
+        <div class="odds-field">
+          <label>Home</label>
+          <input type="number" id="oddsHome" step="0.01" min="1.01" placeholder="2.10"/>
+        </div>
+        <div class="odds-field">
+          <label>Draw</label>
+          <input type="number" id="oddsDraw" step="0.01" min="1.01" placeholder="3.40"/>
+        </div>
+        <div class="odds-field">
+          <label>Away</label>
+          <input type="number" id="oddsAway" step="0.01" min="1.01" placeholder="3.80"/>
+        </div>
+        <button class="btn-scan" onclick="rerunWithOdds(${JSON.stringify(fixture).replace(/"/g,'&quot;')})">Scan</button>
+      </div>
+    </div>
+  `;
+
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.prob-fill').forEach(b => {
+      const w = b.style.width; b.style.width = '0';
+      requestAnimationFrame(() => { b.style.width = w; });
+    });
+  });
+}
+
+async function rerunWithOdds(fixture) {
+  const oh = parseFloat(document.getElementById('oddsHome').value);
+  const od = parseFloat(document.getElementById('oddsDraw').value);
+  const oa = parseFloat(document.getElementById('oddsAway').value);
+  if (isNaN(oh) && isNaN(od) && isNaN(oa)) { showToast('Enter at least one odds value', 'error'); return; }
+  try {
+    const r = await fetch(`${API}/api/predict`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fixture_id: fixture.fixture_id,
+        home_team: fixture.home_team, away_team: fixture.away_team,
+        date: fixture.date, kickoff: fixture.kickoff,
+        league: fixture.league || fixture._league_name,
+        league_code: fixture.league_code, season: fixture.season,
+        odds_home: isNaN(oh)?null:oh, odds_draw: isNaN(od)?null:od, odds_away: isNaN(oa)?null:oa,
+      }),
+    });
+    if (!r.ok) throw new Error(await r.text());
+    const data = await r.json();
+    predictions[fixture.fixture_id] = data;
+    renderPanel(fixture, data);
+    if (data.prediction.value_bets?.length) showToast(`${data.prediction.value_bets.length} value bet(s) found!`, 'success');
+    else showToast('No value bets at these odds.', '');
+  } catch (err) { showToast('Error: ' + err.message, 'error'); }
+}
+
+init();
+</script>
+</body>
+</html>

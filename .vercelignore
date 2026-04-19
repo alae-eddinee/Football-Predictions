@@ -1,0 +1,14 @@
+# Large data and model files — train locally then deploy or use remote storage
+data/
+models/
+notebooks/
+scripts/
+.env
+*.pkl
+*.parquet
+*.csv
+__pycache__/
+.pytest_cache/
+*.pyc
+*.pyo
+.DS_Store
