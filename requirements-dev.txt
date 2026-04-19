@@ -1,0 +1,25 @@
+# Development & training — NOT deployed to Vercel
+-r requirements.txt
+
+# Hyperparameter tuning
+optuna>=3.6.0
+
+# Data storage (alternative parquet engine)
+fastparquet>=2024.2.0
+
+# Visualization
+matplotlib>=3.8.0
+seaborn>=0.13.0
+plotly>=5.20.0
+
+# Calibration & stats
+imbalanced-learn>=0.12.0
+statsmodels>=0.14.0
+
+# CLI
+click>=8.1.7
+rich>=13.7.0
+
+# Jupyter
+jupyter>=1.0.0
+ipykernel>=6.29.0
